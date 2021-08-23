@@ -118,7 +118,7 @@ public:
 protected:
 
 	template<typename T>
-	static T* CreateTBStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, FName InName);
+	static T* CreateTBStateMachine(TSubclassOf<T> StateMachineClass, FName InName);
 
 	void BindStepsCallback(TArray<UTBStep*>& StepsArray, FName FunctionToBind);
 	void InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute);
@@ -155,7 +155,7 @@ protected:
 };
 
 template<typename T>
-T* UTBStateMachine::CreateTBStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, FName InName)
+T* UTBStateMachine::CreateTBStateMachine(TSubclassOf<T> StateMachineClass, FName InName)
 {
 	T* StateMachine = nullptr;
 
