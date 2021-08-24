@@ -28,7 +28,7 @@ public:
 	UTBStep();
 
 	/* Inits the Step */
-	 virtual void InitAndExecute(UTBStateMachine& StateMachine);
+	 virtual void InitAndExecute(UTBStateMachine& StateMachine, uint8 Id);
 
 
 	//---- DELEGATES ----

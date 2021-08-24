@@ -9,9 +9,11 @@ UTBStep::UTBStep()
 	Id = 0;
 }
 
-void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine)
+void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine, uint8 InId)
 {
+	Id = InId;
 	Init(InStateMachine);
+	Native_InitStep();
 	ExecuteStep();
 }
 

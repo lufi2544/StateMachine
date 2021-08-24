@@ -101,7 +101,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
-	static UTBStateMachine* CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, FName Name);
+	static UTBStateMachine* CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass,UObject* WorldContext, FName Name);
 
 	/** Inits the State Machine. */
 	UFUNCTION(BlueprintCallable, Category = "TurnBased", DisplayName = "Init")
@@ -110,15 +110,19 @@ public:
 	/** Ends the State Machine. */
 	UFUNCTION(BlueprintCallable, Category = "TurnBased", DisplayName = "End")
 	void K2_End();
-
+	
 	UPROPERTY(BlueprintReadOnly)
-	AActor* Owner;
+	TWeakObjectPtr<UObject> Owner;
 
+	UPROPERTY()
+	FName StateMachineName;
+
+	
 
 protected:
 
 	template<typename T>
-	static T* CreateTBStateMachine(TSubclassOf<T> StateMachineClass, FName InName);
+	static T* CreateTBStateMachine(TSubclassOf<T> StateMachineClass,UObject* WorldContext, FName InName);
 
 	void BindStepsCallback(TArray<UTBStep*>& StepsArray, FName FunctionToBind);
 	void InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute);
@@ -152,14 +156,20 @@ protected:
 
 
 
+private:
+
+	static uint8 StepsIdCounter;
+
 };
 
 template<typename T>
-T* UTBStateMachine::CreateTBStateMachine(TSubclassOf<T> StateMachineClass, FName InName)
+T* UTBStateMachine::CreateTBStateMachine(TSubclassOf<T> StateMachineClass, UObject* WorldContext, FName InName)
 {
 	T* StateMachine = nullptr;
-
+	
 	StateMachine = NewObject<T>(GetTransientPackage(), StateMachineClass, InName);
+	StateMachine->StateMachineName = InName;
+	StateMachine->Owner = WorldContext;
 
 	return StateMachine;
 }

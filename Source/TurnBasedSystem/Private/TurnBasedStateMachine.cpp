@@ -6,6 +6,7 @@
 #include "TBEndCondition.h"
 
 UTBStateMachine* UTBStateMachine::SelfReference = nullptr;
+uint8 UTBStateMachine::StepsIdCounter = 0;
 
 UTBStateMachine::UTBStateMachine()
 {
@@ -31,7 +32,7 @@ void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
 	// Just running the fist step, the execution of the rest will be handled by the FinishCallback
 	if (StepsToExecute.Num() > 0)
 	{
-		StepsToExecute[0]->InitAndExecute(*this);
+		StepsToExecute[0]->InitAndExecute(*this, ++StepsIdCounter);
 	}
 }
 
@@ -53,9 +54,10 @@ bool UTBStateMachine::Loop()
 	return true;
 }
 
+// TODO Discuss: maybe a bool return and checking here the Array bounds validation??
 void UTBStateMachine::ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId)
 {
-	StepsToExecute[ CurrentStepId + 1 ]->InitAndExecute(*this);
+	StepsToExecute[ CurrentStepId ]->InitAndExecute(*this, ++StepsIdCounter);
 }
 
 bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
@@ -86,7 +88,7 @@ bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 		default:;
 	}
 
-	if (CurrentPhaseSteps.IsValidIndex(StepId + 1))
+	if (CurrentPhaseSteps.IsValidIndex(StepId))
 	{
 		ContinueExecutingSteps(CurrentPhaseSteps, StepId);
 		bHasPassedPhase = false;
@@ -142,9 +144,9 @@ void UTBStateMachine::OnFinishStepFinishCallback(uint8 Id)
 	TryContinueToNextState(Id);
 }
 
-UTBStateMachine* UTBStateMachine::CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, FName Name)
+UTBStateMachine* UTBStateMachine::CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, UObject* WorldContext, FName Name)
 {
-	return CreateTBStateMachine<UTBStateMachine>(StateMachineClass, Name);
+	return CreateTBStateMachine<UTBStateMachine>(StateMachineClass, WorldContext, Name);
 }
 
 void UTBStateMachine::K2_Init()
