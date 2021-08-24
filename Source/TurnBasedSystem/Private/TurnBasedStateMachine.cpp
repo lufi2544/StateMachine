@@ -176,9 +176,9 @@ bool UTBStateMachine::CanLoopStateEnd()
 	{
 	case EStateMachineEndConditionMode::None:
 
-		for (UTBEndCondition*& EndCondition : EndConditions)
+		for (UTBEndCondition*& Condition : EndConditions)
 		{	
-			if ( EndCondition->GetConditionResult() )
+			if ( Condition->GetConditionResult() )
 			{	
 				bEndSuccess = false;
 				break;
@@ -188,9 +188,9 @@ bool UTBStateMachine::CanLoopStateEnd()
 
 	case EStateMachineEndConditionMode::All:
 
-		for (UTBEndCondition*& EndCondition : EndConditions)
+		for (UTBEndCondition*& Condition : EndConditions)
 		{
-			if ( !EndCondition->GetConditionResult() )
+			if ( !Condition->GetConditionResult() )
 			{
 				bEndSuccess = false;
 				break;
@@ -200,25 +200,27 @@ bool UTBStateMachine::CanLoopStateEnd()
 
 	case EStateMachineEndConditionMode::OnlyOne:
 
-		for (UTBEndCondition*& EndCondition : EndConditions)
+		for (UTBEndCondition*& Condition : EndConditions)
 		{
 
-			if ( EndCondition->GetConditionResult() )
+			if ( Condition->GetConditionResult() )
 			{
 				break;
 			}
 		}
+		bEndSuccess = false;
 		break;
 
 	default:
 
 	// Only One Case
-	for(UTBEndCondition*& EndCondition : EndConditions)
+	for(UTBEndCondition*& Condition : EndConditions)
 	{
-		if ( EndCondition->GetConditionResult() )
+		if ( Condition->GetConditionResult() )
 		{
 			break;
 		}
+		bEndSuccess = false;
 	}
 
 		break;
