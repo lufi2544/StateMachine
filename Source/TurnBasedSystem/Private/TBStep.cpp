@@ -14,7 +14,7 @@ void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine, uint8 InId)
 	Id = InId;
 	Init(InStateMachine);
 	Native_InitStep();
-	ExecuteStep();
+	Native_ExecuteStep();
 }
 
 
@@ -23,18 +23,16 @@ void UTBStep::EndStep()
 	OnStepFinished.Broadcast(Id);
 }
 
-void UTBStep::ExecuteStep_Implementation()
+void UTBStep::Native_ExecuteStep()
 {
-	
+	K2_ExecuteStep();
 }
 
 
 void UTBStep::Native_InitStep()
 {
-
 	// Do Stuff Here
-
-	InitStep();
+	K2_InitStep();
 
 
 }

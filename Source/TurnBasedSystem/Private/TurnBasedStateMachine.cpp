@@ -62,11 +62,12 @@ void UTBStateMachine::ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, u
 
 bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 {
-	bool bHasPassedPhase = false;
 	TArray<UTBStep*> CurrentPhaseSteps;
 	TArray<UTBStep*> NextPhaseSteps;
 	EStateMachineState::Type NextState = EStateMachineState::None;
 
+
+	// TODO make this a function to extract the info
 	switch (CurrentState)
 	{
 		case EStateMachineState::Init:
@@ -88,41 +89,43 @@ bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 		default:;
 	}
 
+	// We check if we have enough steps in our Current Phase Steps, 
+	// if not, then we pass over to the next phase.
+
+	bool bHasPassedPhase = false;
 	if (CurrentPhaseSteps.IsValidIndex(StepId))
 	{
-		ContinueExecutingSteps(CurrentPhaseSteps, StepId);
-		bHasPassedPhase = false;
-	}else
-	{	
-
-		switch (NextState)
+		switch (CurrentState)
 		{
 		case EStateMachineState::Loop:
 
-			Loop();
-
-			break;
-		case EStateMachineState::Finished:
-
-			FinishStateMachine();
-			bHasPassedPhase = true;
+			if(!CanLoopStateEnd())
+			{
+				ContinueExecutingSteps(CurrentPhaseSteps, StepId);			
+			}
 
 			break;
 		default:
+
+			ContinueExecutingSteps(CurrentPhaseSteps, StepId);
 			break;
 		}
 
-		// We check if this is the last index of the Finished State
-		if (CurrentState == EStateMachineState::Finished && CurrentState > 0)
-		{
 
-		}else
+	}else
+	{
+		// The SM has finished.
+		if (CurrentState == EStateMachineState::Finished)
 		{
-			// We continue to the Next State Machine State
-			CurrentState = NextState;
-			InitAndExecuteSteps(NextPhaseSteps);
-			bHasPassedPhase = true;	
+			FinishStateMachine();
+			return true;
 		}
+
+		// Change to the Next Phase.		
+		CurrentState = NextState;
+		InitAndExecuteSteps(NextPhaseSteps);
+		bHasPassedPhase = true;
+		
 	}
 	
 	return bHasPassedPhase;
@@ -154,9 +157,9 @@ void UTBStateMachine::K2_Init()
 	Init();
 }
 
-bool UTBStateMachine::ExecuteEndLoopState()
+bool UTBStateMachine::CanLoopStateEnd()
 {
-	bool bEndSuccess = false;
+	bool bEndSuccess = true;
 
 	if (EndConditions.Num() == 0)
 	{
@@ -202,7 +205,6 @@ bool UTBStateMachine::ExecuteEndLoopState()
 
 			if ( EndCondition->GetConditionResult() )
 			{
-				bEndSuccess = true;
 				break;
 			}
 		}
@@ -210,11 +212,11 @@ bool UTBStateMachine::ExecuteEndLoopState()
 
 	default:
 
+	// Only One Case
 	for(UTBEndCondition*& EndCondition : EndConditions)
 	{
 		if ( EndCondition->GetConditionResult() )
 		{
-			bEndSuccess = true;
 			break;
 		}
 	}

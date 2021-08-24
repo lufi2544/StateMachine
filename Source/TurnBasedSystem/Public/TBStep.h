@@ -39,17 +39,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EndStep();
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void InitStep();
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "InitStep"))
+	void K2_InitStep();
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "ExecuteStep"))
+	void K2_ExecuteStep();
 
 protected:
 
 	
-
-	//---- UStep Interface ----
-	UFUNCTION(BlueprintNativeEvent)
-	void ExecuteStep();
-	virtual void ExecuteStep_Implementation();
+	virtual void Native_ExecuteStep();
 
 	virtual void Native_InitStep();
 

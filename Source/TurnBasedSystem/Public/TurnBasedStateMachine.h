@@ -130,6 +130,7 @@ protected:
 	bool TryContinueToNextState(uint8 StepId);
 	void ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId);
 
+
 	/** Returns true if the State Machine has not ended. */
 	bool IsStateMachineAvailable();
 	
@@ -142,7 +143,7 @@ protected:
 
 	/** Loop **/
 	virtual bool Loop();
-	virtual bool ExecuteEndLoopState();
+	virtual bool CanLoopStateEnd();
 	UFUNCTION()
 	void OnLoopStepFinishCallback(uint8 Id);
 	
