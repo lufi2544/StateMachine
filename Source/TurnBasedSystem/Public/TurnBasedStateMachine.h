@@ -142,21 +142,16 @@ protected:
 	
 
 	/** Loop **/
-	virtual bool Loop();
 	virtual bool CanLoopStateEnd();
 	UFUNCTION()
 	void OnLoopStepFinishCallback(uint8 Id);
 	
 
 	/** End **/
-	void End();
-	virtual void End_Internal();
+
 	UFUNCTION()
-	void OnFinishStepFinishCallback(uint8 Id);
 	void FinishStateMachine();
-
-
-
+	void OnFinishStepFinishCallback(uint8 Id);
 private:
 
 	static uint8 StepsIdCounter;

@@ -14,17 +14,34 @@ UTBStateMachine::UTBStateMachine()
 	EndConditionMode = EStateMachineEndConditionMode::Default;
 }
 
+bool UTBStateMachine::IsStateMachineAvailable()
+{
+	return CurrentState != EStateMachineState::Finished && CurrentState != EStateMachineState::None ;
+}
+
+void UTBStateMachine::K2_Init()
+{
+	Init();
+}
+
+void UTBStateMachine::K2_End()
+{
+	// Cancel ? or end ? if we call this, that would mean that the State Machina has not finished on its own.
+}
+
 void UTBStateMachine::Init()
 {
+
 	CurrentState = EStateMachineState::Init;
 	BindStepsCallback(InitSteps, FName("OnInitStepFinishCallback"));
+	InitAndExecuteSteps(InitSteps);
 
+	// Could Add Stuff Here
 	Init_Internal();
 }
 
 void UTBStateMachine::Init_Internal()
 {
-	InitAndExecuteSteps(InitSteps);
 }
 
 void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
@@ -36,28 +53,31 @@ void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
 	}
 }
 
+void UTBStateMachine::OnInitStepFinishCallback(uint8 Id)
+{
+	TryContinueToNextState(Id);
+	// Add Overridable method
+}
+
+void UTBStateMachine::OnLoopStepFinishCallback(uint8 Id)
+{
+	TryContinueToNextState(Id);
+	// Add Overridable method
+}
+
+void UTBStateMachine::OnFinishStepFinishCallback(uint8 Id)
+{
+	TryContinueToNextState(Id);
+	// Add Overridable method
+}
+
+
 void UTBStateMachine::BindStepsCallback(TArray<UTBStep*>& StepsArray, FName FunctionToBind)
 {
 	for (UTBStep*& Step : StepsArray)
 	{
 		Step->OnStepFinished.AddUFunction(this, FName(FunctionToBind));
 	}
-}
-
-bool UTBStateMachine::Loop()
-{
-	CurrentState = EStateMachineState::Loop;
-	BindStepsCallback(LoopSteps, FName("OnLoopStepFinishCallback"));
-	InitAndExecuteSteps(LoopSteps);
-
-	//Recursively call the Loop until we can end the State Machine
-	return true;
-}
-
-// TODO Discuss: maybe a bool return and checking here the Array bounds validation??
-void UTBStateMachine::ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId)
-{
-	StepsToExecute[ CurrentStepId ]->InitAndExecute(*this, ++StepsIdCounter);
 }
 
 bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
@@ -131,30 +151,15 @@ bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 	return bHasPassedPhase;
 }
 
-void UTBStateMachine::OnInitStepFinishCallback(uint8 Id)
+// TODO Discuss: maybe a bool return and checking here the Array bounds validation??
+void UTBStateMachine::ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId)
 {
-	TryContinueToNextState(Id);
-}
-
-
-void UTBStateMachine::OnLoopStepFinishCallback(uint8 Id)
-{
-	TryContinueToNextState(Id);
-}
-
-void UTBStateMachine::OnFinishStepFinishCallback(uint8 Id)
-{
-	TryContinueToNextState(Id);
+	StepsToExecute[CurrentStepId]->InitAndExecute(*this, ++StepsIdCounter);
 }
 
 UTBStateMachine* UTBStateMachine::CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, UObject* WorldContext, FName Name)
 {
 	return CreateTBStateMachine<UTBStateMachine>(StateMachineClass, WorldContext, Name);
-}
-
-void UTBStateMachine::K2_Init()
-{
-	Init();
 }
 
 bool UTBStateMachine::CanLoopStateEnd()
@@ -229,29 +234,8 @@ bool UTBStateMachine::CanLoopStateEnd()
 	return bEndSuccess;
 }
 
-
-void UTBStateMachine::K2_End() 
-{
-	 End();
-}
-
-void UTBStateMachine::End()
-{
-	CurrentState = EStateMachineState::Finished;
-	BindStepsCallback(EndSteps, FName("OnFinishStepFinishCallback"));
-	End_Internal();
-}
-
-void UTBStateMachine::End_Internal()
-{
-	InitAndExecuteSteps( EndSteps );
-}
 void UTBStateMachine::FinishStateMachine()
 {
 	
 }
 
-bool UTBStateMachine::IsStateMachineAvailable()
-{
-	return CurrentState != EStateMachineState::Finished && CurrentState != EStateMachineState::None ;
-}
