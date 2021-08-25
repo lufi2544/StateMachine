@@ -5,7 +5,6 @@
 #include "TBStep.h"
 #include "TBEndCondition.h"
 
-UTBStateMachine* UTBStateMachine::SelfReference = nullptr;
 uint8 UTBStateMachine::StepsIdCounter = 0;
 
 UTBStateMachine::UTBStateMachine()
@@ -238,4 +237,3 @@ void UTBStateMachine::FinishStateMachine()
 {
 	
 }
-

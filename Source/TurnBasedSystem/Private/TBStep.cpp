@@ -6,7 +6,7 @@
 
 UTBStep::UTBStep()
 {
-	Id = 0;
+	Id = -1;
 }
 
 void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine, uint8 InId)

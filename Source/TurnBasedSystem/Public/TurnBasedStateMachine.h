@@ -50,10 +50,6 @@ class TURNBASEDSYSTEM_API UTBStateMachine : public UObject
 {
 	GENERATED_BODY()
 
-
-	/* Singleton Pointer */
-	static UTBStateMachine* SelfReference;
-
 protected:
 
 	/* Main Logic */
@@ -75,30 +71,10 @@ protected:
 	/* Current State Machine State */
 	TEnumAsByte<EStateMachineState::Type> CurrentState;
 
+
 public:
 
 	UTBStateMachine();
-
-	// Singleton-kind function to access the TB State machine
-	static UTBStateMachine& GetInstance()
-	{
-		if (!SelfReference)
-		{
-			SelfReference = NewObject< UTBStateMachine >( GetTransientPackage(), TEXT( " TBStateMachine " ) );
-		}
-
-		return *SelfReference;
-	}
-
-	static UTBStateMachine& GetInstance(TSubclassOf<UTBStateMachine> InstanceClass)
-	{
-		if (!SelfReference)
-		{
-			SelfReference = NewObject< UTBStateMachine >( GetTransientPackage(), InstanceClass, TEXT(" TBStateMachine ") );
-		}
-
-		return *SelfReference;
-	}
 
 	UFUNCTION(BlueprintCallable)
 	static UTBStateMachine* CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass,UObject* WorldContext, FName Name);
@@ -117,7 +93,6 @@ public:
 	UPROPERTY()
 	FName StateMachineName;
 
-	
 
 protected:
 
@@ -148,14 +123,14 @@ protected:
 	
 
 	/** End **/
-
 	UFUNCTION()
 	void FinishStateMachine();
 	void OnFinishStepFinishCallback(uint8 Id);
+
+
 private:
 
 	static uint8 StepsIdCounter;
-
 };
 
 template<typename T>

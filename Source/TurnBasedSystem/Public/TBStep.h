@@ -48,7 +48,6 @@ protected:
 
 	
 	virtual void Native_ExecuteStep();
-
 	virtual void Native_InitStep();
 
 
