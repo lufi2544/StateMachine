@@ -2,15 +2,20 @@
 
 
 #include "TurnBasedStateMachine.h"
+
+#include <Kismet/KismetSystemLibrary.h>
 #include "TBStep.h"
 #include "TBEndCondition.h"
 
-uint8 UTBStateMachine::StepsIdCounter = 0;
 
 UTBStateMachine::UTBStateMachine()
 {
 	CurrentState = EStateMachineState::None;
 	EndConditionMode = EStateMachineEndConditionMode::Default;
+	StateMachineName = FName("");
+	Owner = nullptr;
+	bEndConditionsInit = false;
+	StepsIdCounter = 0;
 }
 
 bool UTBStateMachine::IsStateMachineAvailable()
@@ -25,14 +30,13 @@ void UTBStateMachine::K2_Init()
 
 void UTBStateMachine::K2_End()
 {
-	// Cancel ? or end ? if we call this, that would mean that the State Machina has not finished on its own.
+	// Cancel ? or end ? if we call this, that would mean that the State Machine has not finished on its own.
 }
 
 void UTBStateMachine::Init()
 {
 
 	CurrentState = EStateMachineState::Init;
-	BindStepsCallback(InitSteps, FName("OnInitStepFinishCallback"));
 	InitAndExecuteSteps(InitSteps);
 
 	// Could Add Stuff Here
@@ -48,26 +52,63 @@ void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
 	// Just running the fist step, the execution of the rest will be handled by the FinishCallback
 	if (StepsToExecute.Num() > 0)
 	{
+		BindStepsCallback(StepsToExecute, [&]()->FName
+		{
+				switch (CurrentState)
+				{
+				case EStateMachineState::Init:
+				return FName("OnInitStepFinishCallback");
+				break;
+
+				case EStateMachineState::Loop:
+				return FName("OnLoopStepFinishCallback");
+				break;
+
+				case EStateMachineState::Finished:
+				return FName("OnFinishStepFinishCallback");
+				break;
+
+				default:
+					break;
+				}
+			return FName("");
+		}()
+		);
 		StepsToExecute[0]->InitAndExecute(*this, ++StepsIdCounter);
 	}
 }
 
 void UTBStateMachine::OnInitStepFinishCallback(uint8 Id)
 {
+	InitStepFinished_Internal(Id);
 	TryContinueToNextState(Id);
-	// Add Overridable method
+}
+
+void UTBStateMachine::InitStepFinished_Internal(uint8 Id)
+{
+
 }
 
 void UTBStateMachine::OnLoopStepFinishCallback(uint8 Id)
 {
+	LoopStepFinished_Internal(Id);
 	TryContinueToNextState(Id);
-	// Add Overridable method
+}
+
+void UTBStateMachine::LoopStepFinished_Internal(uint8 Id)
+{
+
 }
 
 void UTBStateMachine::OnFinishStepFinishCallback(uint8 Id)
 {
+	FinishStepFinished_Internal(Id);
 	TryContinueToNextState(Id);
-	// Add Overridable method
+}
+
+void UTBStateMachine::FinishStepFinished_Internal(uint8 Id)
+{
+
 }
 
 
@@ -112,7 +153,12 @@ bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 	// if not, then we pass over to the next phase.
 
 	bool bHasPassedPhase = false;
-	if (CurrentPhaseSteps.IsValidIndex(StepId))
+
+	// ((TotalStepsNum - PreviousStepsNum)-StepsLeftNum) - 1
+	//  StepsLeftNum = TotalSteps - CurrentStep
+	//int32 IdToVerify = StepsIdCounter -  ;
+
+	if (CurrentPhaseSteps.IsValidIndex((StepsIdCounter - StepId) - 1 ))
 	{
 		switch (CurrentState)
 		{
@@ -169,11 +215,17 @@ bool UTBStateMachine::CanLoopStateEnd()
 	{
 		return true;
 	}
-	// We init the Conditions Objects here maybe the State machine does not reach here
-	// so there is no point in Init this before, wasted time.
-	for(UTBEndCondition*& EndCondition : EndConditions)
+
+	if(!bEndConditionsInit)
 	{
-		EndCondition->Init(*this);
+		// We init the Conditions Objects here maybe the State machine does not reach here
+		// so there is no point in Init this before, wasted time.
+		for(UTBEndCondition*& EndCondition : EndConditions)
+		{
+			EndCondition->InitSMObject(*this);
+		}
+	
+		bEndConditionsInit = true;
 	}
 
 	switch ( EndConditionMode )
@@ -235,5 +287,5 @@ bool UTBStateMachine::CanLoopStateEnd()
 
 void UTBStateMachine::FinishStateMachine()
 {
-	
+	UKismetSystemLibrary::PrintString(this, "Finished State Machine");
 }

@@ -3,7 +3,18 @@
 
 #include "TBStateMachineObject.h"
 
-void UTBStateMachineObject::Init(UTBStateMachine& InStateMachine)
+UTBStateMachineObject::UTBStateMachineObject()
 {
-	StateMachine = &InStateMachine;
+	StateMachine = nullptr;
+	bInit = false;
+}
+
+void UTBStateMachineObject::InitSMObject(UTBStateMachine& InStateMachine)
+{
+	if (!bInit)
+	{
+		StateMachine = &InStateMachine;
+		bInit = true;
+	}
+	
 }

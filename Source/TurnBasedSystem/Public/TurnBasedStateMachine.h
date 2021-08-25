@@ -77,7 +77,7 @@ public:
 	UTBStateMachine();
 
 	UFUNCTION(BlueprintCallable)
-	static UTBStateMachine* CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass,UObject* WorldContext, FName Name);
+	static UTBStateMachine* CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, UObject* WorldContext, FName Name);
 
 	/** Inits the State Machine. */
 	UFUNCTION(BlueprintCallable, Category = "TurnBased", DisplayName = "Init")
@@ -105,7 +105,6 @@ protected:
 	bool TryContinueToNextState(uint8 StepId);
 	void ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId);
 
-
 	/** Returns true if the State Machine has not ended. */
 	bool IsStateMachineAvailable();
 	
@@ -114,23 +113,25 @@ protected:
 	virtual void Init_Internal();
 	UFUNCTION()
 	void OnInitStepFinishCallback(uint8 Id);
+	virtual void InitStepFinished_Internal(uint8 Id);
 	
 
 	/** Loop **/
 	virtual bool CanLoopStateEnd();
 	UFUNCTION()
 	void OnLoopStepFinishCallback(uint8 Id);
-	
+	virtual void LoopStepFinished_Internal(uint8 Id);
+	uint8 bEndConditionsInit : 1;
 
 	/** End **/
 	UFUNCTION()
 	void FinishStateMachine();
 	void OnFinishStepFinishCallback(uint8 Id);
-
+	virtual void FinishStepFinished_Internal(uint8 Id);
 
 private:
-
-	static uint8 StepsIdCounter;
+	int32 StepsIdCounter;
+	int32 CurrentExecutedSteps;
 };
 
 template<typename T>

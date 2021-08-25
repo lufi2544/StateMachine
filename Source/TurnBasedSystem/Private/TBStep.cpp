@@ -12,11 +12,15 @@ UTBStep::UTBStep()
 void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine, uint8 InId)
 {
 	Id = InId;
-	Init(InStateMachine);
+	// Init
+	InitSMObject(InStateMachine);
 	Native_InitStep();
-	Native_ExecuteStep();
-}
+	K2_InitStep();
 
+	// Execute
+	Native_ExecuteStep();
+	K2_ExecuteStep();
+}
 
 void UTBStep::EndStep()
 {
@@ -25,14 +29,10 @@ void UTBStep::EndStep()
 
 void UTBStep::Native_ExecuteStep()
 {
-	K2_ExecuteStep();
-}
 
+}
 
 void UTBStep::Native_InitStep()
 {
-	// Do Stuff Here
-	K2_InitStep();
-
-
+	
 }
