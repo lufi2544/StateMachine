@@ -154,6 +154,7 @@ bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 
 	bool bHasPassedPhase = false;
 
+	//TODO
 	// ((TotalStepsNum - PreviousStepsNum)-StepsLeftNum) - 1
 	//  StepsLeftNum = TotalSteps - CurrentStep
 	//int32 IdToVerify = StepsIdCounter -  ;
