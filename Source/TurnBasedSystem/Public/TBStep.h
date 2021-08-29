@@ -21,6 +21,7 @@ class TURNBASEDSYSTEM_API UTBStep : public UTBStateMachineObject
 
 	//----PROPERTIES----
 	uint8 Id;
+	uint8 bInit : 1;
 	//----  ----
 
 public:

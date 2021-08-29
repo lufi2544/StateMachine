@@ -1,26 +1,33 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "TurnBasedStateMachine.h"
+// TODO Handle the State Machine End.( Erasing delegates and killing objects? )
 
-#include <Kismet/KismetSystemLibrary.h>
+#include "TurnBasedStateMachine.h"
 #include "TBStep.h"
 #include "TBEndCondition.h"
 
+#include <Kismet/KismetSystemLibrary.h>
 
 UTBStateMachine::UTBStateMachine()
 {
-	CurrentState = EStateMachineState::None;
+	StateInfo = FTBStateMachineStateInfo();
 	EndConditionMode = EStateMachineEndConditionMode::Default;
 	StateMachineName = FName("");
 	Owner = nullptr;
 	bEndConditionsInit = false;
 	StepsIdCounter = 0;
+	LastStatesSteps = 0;
+}
+
+UTBStateMachine* UTBStateMachine::CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, UObject* WorldContext, FName Name)
+{
+	return CreateTBStateMachine<UTBStateMachine>(StateMachineClass, WorldContext, Name);
 }
 
 bool UTBStateMachine::IsStateMachineAvailable()
 {
-	return CurrentState != EStateMachineState::Finished && CurrentState != EStateMachineState::None ;
+	return StateInfo.CurrentState != EStateMachineState::Finished && StateInfo.CurrentState != EStateMachineState::None ;
 }
 
 void UTBStateMachine::K2_Init()
@@ -36,8 +43,8 @@ void UTBStateMachine::K2_End()
 void UTBStateMachine::Init()
 {
 
-	CurrentState = EStateMachineState::Init;
-	InitAndExecuteSteps(InitSteps);
+	StateInfo.CurrentState = EStateMachineState::Init;
+	HandleCurrentStepsInitialisation();
 
 	// Could Add Stuff Here
 	Init_Internal();
@@ -47,14 +54,14 @@ void UTBStateMachine::Init_Internal()
 {
 }
 
-void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
+void UTBStateMachine::InitAndExecuteSteps()
 {
 	// Just running the fist step, the execution of the rest will be handled by the FinishCallback
-	if (StepsToExecute.Num() > 0)
+	if (StateInfo.CurrentPhaseSteps.Num() > 0)
 	{
-		BindStepsCallback(StepsToExecute, [&]()->FName
+		BindStepsCallback(StateInfo.CurrentPhaseSteps, [&]()->FName
 		{
-				switch (CurrentState)
+				switch (StateInfo.CurrentState)
 				{
 				case EStateMachineState::Init:
 				return FName("OnInitStepFinishCallback");
@@ -74,7 +81,34 @@ void UTBStateMachine::InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute)
 			return FName("");
 		}()
 		);
-		StepsToExecute[0]->InitAndExecute(*this, ++StepsIdCounter);
+		StateInfo.CurrentPhaseSteps[0]->InitAndExecute(*this, ++StepsIdCounter);
+	}else
+	{
+		ChangeToNextState();
+	}
+}
+
+void UTBStateMachine::UpdateStateInfoValues()
+{
+	switch (StateInfo.CurrentState)
+	{
+	case EStateMachineState::Init:
+		StateInfo.CurrentPhaseSteps = InitSteps;
+		StateInfo.NextState = EStateMachineState::Loop;
+		StateInfo.NextPhaseSteps = LoopSteps;
+		break;
+
+	case EStateMachineState::Loop:
+		StateInfo.CurrentPhaseSteps = LoopSteps;
+		StateInfo.NextPhaseSteps = EndSteps;
+		StateInfo.NextState = EStateMachineState::Finished;
+		break;
+
+	case EStateMachineState::Finished:
+		StateInfo.CurrentPhaseSteps = EndSteps;
+		break;
+
+	default:;
 	}
 }
 
@@ -120,97 +154,77 @@ void UTBStateMachine::BindStepsCallback(TArray<UTBStep*>& StepsArray, FName Func
 	}
 }
 
+void UTBStateMachine::HandleCurrentStepsInitialisation()
+{
+	UpdateStateInfoValues();
+	InitAndExecuteSteps();
+}
+
 bool UTBStateMachine::TryContinueToNextState(uint8 StepId)
 {
 	TArray<UTBStep*> CurrentPhaseSteps;
 	TArray<UTBStep*> NextPhaseSteps;
 	EStateMachineState::Type NextState = EStateMachineState::None;
 
-
-	// TODO make this a function to extract the info
-	switch (CurrentState)
-	{
-		case EStateMachineState::Init:
-			CurrentPhaseSteps = InitSteps;
-			NextPhaseSteps    = LoopSteps;
-			NextState		  = EStateMachineState::Loop;
-			break;
-		
-		case EStateMachineState::Loop:
-			CurrentPhaseSteps = LoopSteps;
-			NextPhaseSteps    = EndSteps;
-			NextState		  = EStateMachineState::Finished;
-			break;
-		
-		case EStateMachineState::Finished:
-			CurrentPhaseSteps = EndSteps;
-			break;
-		
-		default:;
-	}
-
-	// We check if we have enough steps in our Current Phase Steps, 
-	// if not, then we pass over to the next phase.
-
-	bool bHasPassedPhase = false;
-
-	//TODO
-	// ((TotalStepsNum - PreviousStepsNum)-StepsLeftNum) - 1
-	//  StepsLeftNum = TotalSteps - CurrentStep
-	//int32 IdToVerify = StepsIdCounter -  ;
-
-	if (CurrentPhaseSteps.IsValidIndex((StepsIdCounter - StepId) - 1 ))
-	{
-		switch (CurrentState)
-		{
-		case EStateMachineState::Loop:
-
-			if(!CanLoopStateEnd())
-			{
-				ContinueExecutingSteps(CurrentPhaseSteps, StepId);			
-			}
-
-			break;
-		default:
-
-			ContinueExecutingSteps(CurrentPhaseSteps, StepId);
-			break;
-		}
-
-
-	}else
-	{
-		// The SM has finished.
-		if (CurrentState == EStateMachineState::Finished)
-		{
-			FinishStateMachine();
-			return true;
-		}
-
-		// Change to the Next Phase.		
-		CurrentState = NextState;
-		InitAndExecuteSteps(NextPhaseSteps);
-		bHasPassedPhase = true;
-		
-	}
-	
-	return bHasPassedPhase;
+	int32 StepIdToVerify = StepId - StateInfo.PreviouseStatesStepsNum;
+	return TryContinueExecutingSteps(StepIdToVerify);
 }
 
 // TODO Discuss: maybe a bool return and checking here the Array bounds validation??
-void UTBStateMachine::ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId)
+bool UTBStateMachine::TryContinueExecutingSteps(uint8 StepIdxToExecute)
 {
-	StepsToExecute[CurrentStepId]->InitAndExecute(*this, ++StepsIdCounter);
+	/* We check if we have enough steps in our Current Phase Steps,
+	 if not, then we pass over to the next phase.
+
+
+	 In the case we are on the Loop State && we run out of steps && the Loop State can not end still
+	 we run the Current State( Loop ) from the beginning. */
+	if( (StateInfo.CurrentState == EStateMachineState::Loop))
+	{
+		if(!CanLoopStateEnd())
+		{
+			if(StepIdxToExecute == StateInfo.CurrentPhaseSteps.Num())
+			{
+				StepIdxToExecute = 0;			
+			}
+
+		}else
+		{
+			ChangeToNextState();
+			return true;
+		}
+		
+	}
+
+	if (StateInfo.CurrentPhaseSteps.IsValidIndex(StepIdxToExecute))
+	{
+
+		StateInfo.CurrentPhaseSteps[StepIdxToExecute]->InitAndExecute(*this, ++StepsIdCounter);
+	
+	}else
+	{
+
+		ChangeToNextState();
+		return true;
+	}
+
+	return false;
 }
 
-UTBStateMachine* UTBStateMachine::CreateStateMachine(TSubclassOf<UTBStateMachine> StateMachineClass, UObject* WorldContext, FName Name)
+void UTBStateMachine::ChangeToNextState()
 {
-	return CreateTBStateMachine<UTBStateMachine>(StateMachineClass, WorldContext, Name);
+	if (StateInfo.CurrentState == EStateMachineState::Finished)
+	{
+		FinishStateMachine();
+		return;
+	}
+
+	StateInfo.SubmitState();
+	HandleCurrentStepsInitialisation();
 }
 
 bool UTBStateMachine::CanLoopStateEnd()
 {
-	bool bEndSuccess = true;
 
 	if (EndConditions.Num() == 0)
 	{
@@ -237,8 +251,7 @@ bool UTBStateMachine::CanLoopStateEnd()
 		{	
 			if ( Condition->GetConditionResult() )
 			{	
-				bEndSuccess = false;
-				break;
+				return false;
 			}
 		}
 		break;
@@ -249,8 +262,7 @@ bool UTBStateMachine::CanLoopStateEnd()
 		{
 			if ( !Condition->GetConditionResult() )
 			{
-				bEndSuccess = false;
-				break;
+				return false;
 			}
 		}
 		break;
@@ -262,10 +274,9 @@ bool UTBStateMachine::CanLoopStateEnd()
 
 			if ( Condition->GetConditionResult() )
 			{
-				break;
+				return true;
 			}
 		}
-		bEndSuccess = false;
 		break;
 
 	default:
@@ -275,15 +286,14 @@ bool UTBStateMachine::CanLoopStateEnd()
 	{
 		if ( Condition->GetConditionResult() )
 		{
-			break;
+			return true;
 		}
-		bEndSuccess = false;
 	}
 
 		break;
 	}
 
-	return bEndSuccess;
+	return false;
 }
 
 void UTBStateMachine::FinishStateMachine()

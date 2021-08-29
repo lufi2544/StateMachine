@@ -24,6 +24,7 @@ public:
 	UTBEndCondition();
 
 	bool GetConditionResult();
+	//
 
 	//----DELEGATES----
 	FOnConditionSuccessful OnConditionSuccessful;

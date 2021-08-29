@@ -4,42 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "TBStateMachineTypes.h"
 #include "TurnBasedStateMachine.generated.h"
 
 class UTBStep;
 class UTBEndCondition; 
-
-
-/** Current State of the State Machine. */
-namespace EStateMachineState
-{
-	enum Type
-	{
-
-		// Not Init yet
-		None,
-
-		Init,
-
-		Loop,
-
-		Finished 
-	};
-};
-
-UENUM(BlueprintType)
-enum class EStateMachineEndConditionMode: uint8
-{
-	Default,
-	// None of the Conditions have to be met
-	None,
-
-	// All conditions have to be met
-	All,
-
-	// Just one condition 
-	OnlyOne
-};
 
 
 /**
@@ -68,8 +37,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Instanced, BlueprintReadOnly)
 	TArray<UTBEndCondition*> EndConditions;
 
-	/* Current State Machine State */
-	TEnumAsByte<EStateMachineState::Type> CurrentState;
+	/* Current State Machine State Info */
+	UPROPERTY()
+	FTBStateMachineStateInfo StateInfo;
 
 
 public:
@@ -100,10 +70,14 @@ protected:
 	static T* CreateTBStateMachine(TSubclassOf<T> StateMachineClass,UObject* WorldContext, FName InName);
 
 	void BindStepsCallback(TArray<UTBStep*>& StepsArray, FName FunctionToBind);
-	void InitAndExecuteSteps(TArray<UTBStep*>& StepsToExecute);
+	void HandleCurrentStepsInitialisation();
+	void InitAndExecuteSteps();
+	void UpdateStateInfoValues();
 	/** True if the State Machine can continue to the next State (Init, Loop, End) */
 	bool TryContinueToNextState(uint8 StepId);
-	void ContinueExecutingSteps(TArray<UTBStep*>& StepsToExecute, uint8 CurrentStepId);
+	bool TryContinueExecutingSteps(uint8 StepIdxToExecute);
+
+	void ChangeToNextState();
 
 	/** Returns true if the State Machine has not ended. */
 	bool IsStateMachineAvailable();
@@ -130,8 +104,9 @@ protected:
 	virtual void FinishStepFinished_Internal(uint8 Id);
 
 private:
-	int32 StepsIdCounter;
-	int32 CurrentExecutedSteps;
+	uint8 StepsIdCounter;
+	/** Cached last states steps, so we know how many steps has been executed.  */
+	uint8 LastStatesSteps;
 };
 
 template<typename T>

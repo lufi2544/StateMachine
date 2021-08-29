@@ -7,15 +7,20 @@
 UTBStep::UTBStep()
 {
 	Id = -1;
+	bInit = false;
 }
 
 void UTBStep::InitAndExecute(UTBStateMachine& InStateMachine, uint8 InId)
 {
-	Id = InId;
-	// Init
-	InitSMObject(InStateMachine);
-	Native_InitStep();
-	K2_InitStep();
+	if(!bInit)
+	{
+		Id = InId;
+		// Init
+		InitSMObject(InStateMachine);
+		Native_InitStep();
+		K2_InitStep();
+		bInit = true;
+	}
 
 	// Execute
 	Native_ExecuteStep();
